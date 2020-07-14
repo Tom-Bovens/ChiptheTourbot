@@ -1,6 +1,7 @@
 
 
 const ChipChat = require('chipchat');
+const get = require('lodash/get');
 
 // Create a new bot instance
 const bot = new ChipChat({
@@ -24,14 +25,28 @@ bot.on('error', console.log);
 bot.on('message.create.contact.chat', (message, conversation) => {
 	console.log('Processing message ', message.text)
 	conversation.say({
-		text:`Echo: ${message.text}`,
-		role:'agent'
+		text: `Echo: ${message.text}`,
+		role: 'agent'
 	});
 });
 */
-:
-bot.on('conversation.create', (message, conversation) => {
-    console.log("Conversation created!", message)
+
+bot.on('conversation.create', (message) => {
+    console.log("Conversation created!", message);
+    const userName = get(message, 'data.user.displayName', 'agent');
+    const conversationId = get(message, 'data.conversation.id');
+    bot.conversation(conversationId).then(conversation => {
+        conversation.say([
+            {
+                text: `Hello ${userName}.`,
+                role: 'agent'
+            },
+            {
+                text: `/leave`,
+                type: 'command'
+            }
+        ]);
+    });
 });
 
 // Start Express.js webhook server to start listening

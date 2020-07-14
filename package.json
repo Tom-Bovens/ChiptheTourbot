@@ -4,7 +4,8 @@
   "description": "A small bot which educates new users on how to use ChatShipper.",
   "main": "src/index.js",
   "dependencies": {
-    "chipchat": "^0.1.8"
+    "chipchat": "^0.1.8",
+    "lodash": "^4.17.19"
   },
   "devDependencies": {},
   "scripts": {

@@ -1,4 +1,4 @@
-# Chipchat Guide bot Chip (W.I.P - Currently unfunctional)
+# Chipchat Guide bot Chip (W.I.P)
 
 This bot will welcome new users to Chatshipper and guide them around the platform with a few pre-made informative videos.
 
@@ -19,5 +19,5 @@ To run this bot as a Chatshipper developer, follow this guide.
 
 6. After following the above steps, run 'npm run dev' in the project directory where you exported the token and turn on your webhook. You should see a GET request coming in on Ngrok and being passed to your application.
 
-7. You can now talk to your bot on development.chatshipper.com by clicking on "Web Widget" in the integrations menu.
+7. You can now talk to your bot on development.chatshipper.com by starting a new conversation with your bot.
 
