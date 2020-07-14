@@ -1,9 +1,9 @@
-#Chipchat Guide bot Chip (W.I.P - Currently unfunctional)
+# Chipchat Guide bot Chip (W.I.P - Currently unfunctional)
 
 This bot will welcome new users to Chatshipper and guide them around the platform with a few pre-made informative videos.
 
 
-##Development
+## Development
 
 To run this bot as a Chatshipper developer, follow this guide.
 
