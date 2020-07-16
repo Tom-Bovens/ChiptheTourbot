@@ -14,7 +14,7 @@ const incrementor = {
     }
 };
 
-function nextVideoinPath(conversation, currentIteration = 0, videoContentDescription, specialMessage = "none") {
+function nextVideoinPath(conversation, currentIteration = 0, videoContentDescription, specialMessage) {
     const videoArray = [
         "https://www.youtube.com/embed/px-KEHbUrVo", // Video 1
         "https://www.youtube.com/embed/846DWH8soIw", // Video 2
@@ -31,24 +31,25 @@ function nextVideoinPath(conversation, currentIteration = 0, videoContentDescrip
         "https://www.youtube.com/embed/ZzUP4uxOeh0", // Video 13
         "https://www.youtube.com/embed/iEgnFXG03Yk"  // Video 14
     ]
-    conversation.say([
+    const messages = [
         {
             text: "The next video will show " + videoContentDescription,
             role: 'bot',
             delay: incrementor.set(3)
-        }
-    ])
-    if (specialmessage === "none") {
-        conversation.say(
+        },
+    ]
+    if (specialMessage) {
+        messages.push(
             {
                 text: specialMessage,
                 role: "bot",
                 delay: incrementor.increment(3)
             }
-        )}
-    conversation.say([
+        )
+    }
+    messages.push(
         {
-            text: videoArray[(currentIteration - 1)],
+            text: videoArray[(currentIteration)],
             contentType: "text/url",
             delay: incrementor.increment(7),
             actions: [
@@ -59,8 +60,8 @@ function nextVideoinPath(conversation, currentIteration = 0, videoContentDescrip
                 }
             ]
         }
-    ])
-
+    )
+    conversation.say(messages);
 }
 
 
@@ -147,18 +148,12 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
                     {
                         type: "reply",
                         text: "Done",
-                        payload: "FirstvideoWatched"
+                        payload: "0complete"
                     }
                 ]
             }
         ]);
-    };
-});
-
-
-bot.on('message.create.agent.postback.agent', (message, conversation) => {
-    console.log('Processing message ', message.text)
-    if (message.text === "FirstvideoWatched") {
+    } else if (message.text === "0complete") {
         conversation.say([
             {
                 text: "Alright, you should know how to accept a conversation now!",
@@ -183,41 +178,45 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
                     {
                         type: "reply",
                         text: "Done",
-                        payload: "2complete"
+                        payload: "1complete"
                     }
                 ]
             }
         ]);
-    };
-});
-
-bot.on('message.create.agent.postback.agent', (message, conversation) => {
-    if (message.text === "2complete") {
-        const string = "This tour has 14 videos by the way, but it shouldn't take more than 15 minutes"
-        nextVideoinPath(conversation, 3, "how to edit contact fields in conversations.", string)
+    } else if (message.text === "1complete") {
+        nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
+    } else if (message.text === "2complete") {
+        nextVideoinPath(conversation, 3, "how to finish a conversation by making a form.", "Also, if you don't have the time to take this tour now, you can always close this conversation and resume later.")
     } else if (message.text === "3complete") {
-        nextVideoinPath(conversation, 4, "how to finish a conversation by making a form.", "Also, if you don't have the time to take this tour now, you can always close this conversation and resume later.")
+        nextVideoinPath(conversation, 4, "how to edit your preferences and personal details in Chatshipper.", "Be sure to visit the preferences tab later to select the options that you like best!")
     } else if (message.text === "4complete") {
-        nextVideoinPath(conversation, 5, "how to edit your preferences and personal details in Chatshipper.", "Be sure to visit the preferences tab later to select the options that you like best!")
+        nextVideoinPath(conversation, 5, "Video is private.")
     } else if (message.text === "5complete") {
-        nextVideoinPath(conversation, 6, "Video is private.","none")
+        nextVideoinPath(conversation, 6, "how to send files, videos or photos via Chatshipper.", "We're halfway! Keep going!")
     } else if (message.text === "6complete") {
-        nextVideoinPath(conversation, 7, "how to send files, videos or photos via Chatshipper.", "We're halfway! Keep going!.")
+        nextVideoinPath(conversation, 7, "how to find a contact or conversation with the search bar.")
     } else if (message.text === "7complete") {
-        nextVideoinPath(conversation, 8, "how to find a contact or conversation with the search bar.")
+        nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.", "Remember, you can quit and come back at any time to finish the tour.")
     } else if (message.text === "8complete") {
-        nextVideoinPath(conversation, 9, "how to forward your conversation to another agent or department.", "Remember, you can quit and come back at any time to finish the tour.")
+        nextVideoinPath(conversation, 9, "how to start a chat with one or more colleagues.", "We hit number 10, just 4 more to go!")
     } else if (message.text === "9complete") {
-        nextVideoinPath(conversation, 10, "how to start a chat with one or more colleagues.", "We hit number 10, just 4 more to go!")
+        nextVideoinPath(conversation, 10, "how to ask a colleague to join your current conversation with a consumer.", "Did you know that this bot took approximately 16 manhours to be finished?")
     } else if (message.text === "10complete") {
-        nextVideoinPath(conversation, 11, "how to ask a colleague to join your current conversation with a consumer.", "Did you know that this bot took approximately 16 manhours to be finished?")
+        nextVideoinPath(conversation, 11, "how to follow and unfollow conversations.")
     } else if (message.text === "11complete") {
-        nextVideoinPath(conversation, 12, "how to follow and unfollow conversations.")
+        nextVideoinPath(conversation, 12, "how to make and use pre-made (canned) responses in conversations.")
     } else if (message.text === "12complete") {
-        nextVideoinPath(conversation, 13, "how to make and use pre-made (canned) responses in conversations.")
-    } else if (message.text === "tourfinished") {
-        nextVideoinPath(conversation, 14, "how to give feedback on the forms that your colleagues made.", "This is the last video, we're almost here!")
-    };
-});
+        nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", "This is the last video, we're almost here!")
+    }  else if (message.text === "13complete") {
+            conversation.say([
+                {
+                    text: "Alright, that was the tour! Come back any time to retake it!",
+                    role: 'bot',
+                    delay: incrementor.set(3)
+                },
+            ]);
+        };
+    });
+
 // Start Express.js webhook server to start listening
 bot.start();
