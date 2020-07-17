@@ -85,74 +85,111 @@ bot.on('error', console.log);
 
 bot.on('conversation.create', (message) => {
     console.log("Conversation created!", message);
+    const userId = message.data.user.id
     const userName = get(message, 'data.user.givenName', 'agent');
     const conversationId = get(message, 'data.conversation.id');
     bot.conversation(conversationId).then(conversation => {
-        conversation.say([
-            {
-                text: `Hello ${userName}! I am Chip, your guide to Chatshipper. Pleased to meet you!`,
-                role: 'bot',
-                delay: incrementor.increment(3)
-            },
-            {
-                text:"Would you like to take the tour now?",
-                role: "bot",
-                delay: incrementor.increment(4),
-                actions: [
+        bot.users.get(userId).then((user) => {
+            if (get(user, 'meta.hasToured', 'false') === 'true') {
+                console.log("Person has toured before.")
+                conversation.say([
                     {
-                        type: "reply",
-                        text: "Yes",
-                        payload: "StartTour"
+                        text: `Hello ${userName}! It seems that you've already taken this tour.`,
+                        role: 'bot',
+                        delay: incrementor.set(3)
                     },
                     {
-                        type: "reply",
-                        text: "No",
-                        payload: "CancelTour"
+                        text:"Would you like to take the tour again?",
+                        role: "bot",
+                        delay: incrementor.increment(4),
+                        actions: [
+                            {
+                                type: "reply",
+                                text: "Yes",
+                                payload: "StartTour"
+                            },
+                            {
+                                type: "reply",
+                                text: "No",
+                                payload: "CancelTour"
+                            }
+                        ]
                     }
-                ]
+                ]);
+            } else {
+                console.log("Person hasn't toured")
+                conversation.say([
+                    {
+                        text: `Hello ${userName}! I am Chip, your guide to Chatshipper. Pleased to meet you!`,
+                        role: 'bot',
+                        delay: incrementor.set(3)
+                    },
+                    {
+                        text:"Would you like to take the tour now?",
+                        role: "bot",
+                        delay: incrementor.increment(4),
+                        actions: [
+                            {
+                                type: "reply",
+                                text: "Yes",
+                                payload: "StartTour"
+                            },
+                            {
+                                type: "reply",
+                                text: "No",
+                                payload: "CancelTour"
+                            }
+                        ]
+                    }
+                ]);
             }
-        ]);
+        });
     });
 });
 
 
 bot.on('message.create.agent.postback.agent', (message, conversation) => {
     console.log('Processing message ', message.text)
+    const userId = message.user
+    console.log(userId)
     if (message.text === "StartTour") {
-        conversation.say([
-            {
-                text: "Great! Then let's get started!",
-                role: 'bot',
-                delay: incrementor.set(3)
-            },
-            {
-                text: "This tour will be done with Youtube videos, which i will send to you one by one.",
-                role: 'bot',
-                delay: incrementor.increment(5)
-            },
-            {
-                text: "Please click the button when you are done watching the video.",
-                role: 'bot',
-                delay: incrementor.increment(4)
-            },
-            {
-                text: "The first video will show you how to accept an incoming chat.",
-                role: 'bot',
-                delay: incrementor.increment(4)
-            },
-            {
-                text: "https://www.youtube.com/embed/px-KEHbUrVo",
-                contentType: "text/url",
-                delay: incrementor.increment(7),
-                actions: [
-                    {
-                        type: "reply",
-                        text: "Done",
-                        payload: "0complete"
-                    }
-                ]
-            }
-        ]);
+        bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
+            console.log("User meta hasToured = " + user.meta.hasToured)
+            conversation.say([
+                {
+                    text: "Great! Then let's get started!",
+                    role: 'bot',
+                    delay: incrementor.set(3)
+                },
+                {
+                    text: "This tour will be done with Youtube videos, which i will send to you one by one.",
+                    role: 'bot',
+                    delay: incrementor.increment(5)
+                },
+                {
+                    text: "Please click the button when you are done watching the video.",
+                    role: 'bot',
+                    delay: incrementor.increment(4)
+                },
+                {
+                    text: "The first video will show you how to accept an incoming chat.",
+                    role: 'bot',
+                    delay: incrementor.increment(4)
+                },
+                {
+                    text: "https://www.youtube.com/embed/px-KEHbUrVo",
+                    contentType: "text/url",
+                    delay: incrementor.increment(7),
+                    actions: [
+                        {
+                            type: "reply",
+                            text: "Done",
+                            payload: "0complete"
+                        }
+                    ]
+                }
+            ]);
+        })
     } else if (message.text === "0complete") {
         conversation.say([
             {
@@ -186,7 +223,7 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
     } else if (message.text === "1complete") {
         nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
     } else if (message.text === "2complete") {
-        nextVideoinPath(conversation, 3, "how to finish a conversation by making a form.", "Also, if you don't have the time to take this tour now, you can always close this conversation and resume later.")
+        nextVideoinPath(conversation, 11, "how to finish a conversation by making a form.", "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
     } else if (message.text === "3complete") {
         nextVideoinPath(conversation, 4, "how to edit your preferences and personal details in Chatshipper.", "Be sure to visit the preferences tab later to select the options that you like best!")
     } else if (message.text === "4complete") {
@@ -196,7 +233,7 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
     } else if (message.text === "6complete") {
         nextVideoinPath(conversation, 7, "how to find a contact or conversation with the search bar.")
     } else if (message.text === "7complete") {
-        nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.", "Remember, you can quit and come back at any time to finish the tour.")
+        nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.")
     } else if (message.text === "8complete") {
         nextVideoinPath(conversation, 9, "how to start a chat with one or more colleagues.", "We hit number 10, just 4 more to go!")
     } else if (message.text === "9complete") {
@@ -208,6 +245,7 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
     } else if (message.text === "12complete") {
         nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", "This is the last video, we're almost here!")
     }  else if (message.text === "13complete") {
+            bot.users.update(userId, { meta: { hasToured: 'true' }}).then((user) => { })
             conversation.say([
                 {
                     text: "Alright, that was the tour! Come back any time to retake it!",
