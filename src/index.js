@@ -1,5 +1,11 @@
 
 
+// To-do
+//
+// - Don't show "Great! You should now know how to" when continuing a tour.
+// - Remove the reset progress button.
+// - Check if there are any messages when the bot starts (only on the conversation.create).
+
 const ChipChat = require('chipchat');
 const get = require('lodash/get');
 const incrementor = {
@@ -67,6 +73,10 @@ function nextVideoinPath(conversation, currentIteration = 0, videoContentDescrip
     conversation.say(messages);
 }
 
+function participantsCheck(conversation) {
+    console.log(Object.keys(conversation.participants).length + " users in this conversation.")
+    return Object.keys(conversation.participants).length
+}
 
 // Create a new bot instance
 const bot = new ChipChat({
@@ -89,96 +99,109 @@ bot.on('error', console.log);
 
 bot.on('conversation.create', (message) => {
     console.log("Conversation created!", message);
-    const userId = message.data.user.id
-    const userName = get(message, 'data.user.givenName', 'agent');
-    const conversationId = get(message, 'data.conversation.id');
-    bot.conversation(conversationId).then(conversation => {
-        bot.users.get(userId).then((user) => {
-            const userProgress = get(user, 'meta.hasToured', 'false')
-            if (userProgress === 'true') {
-                console.log("Person has toured before.")
-                conversation.say([
-                    {
-                        text: `Hello ${userName}! It seems that you've already taken this tour.`,
-                        role: 'bot',
-                        delay: incrementor.set(3)
-                    },
-                    {
-                        text:"Would you like to take the tour again?",
-                        role: "bot",
-                        delay: incrementor.increment(4),
-                        actions: [
+    const userId = get(message, 'data.user.id');
+    if (userId) {
+        const userName = get(message, 'data.user.givenName', 'agent');
+        const conversationId = get(message, 'data.conversation.id');
+        bot.conversation(conversationId).then(conversation => {
+            bot.users.get(userId).then((user) => {
+                if (participantsCheck(conversation) <= 2) {
+                    const userProgress = get(user, 'meta.hasToured', 'false')
+                    if (userProgress === 'true') {
+                        console.log("Person has toured before.")
+                        conversation.say([
                             {
-                                type: "reply",
-                                text: "Yes",
-                                payload: "StartTour"
+                                text: `Hello ${userName}! It seems that you've already taken this tour.`,
+                                role: 'bot',
+                                delay: incrementor.set(3)
                             },
                             {
-                                type: "reply",
-                                text: "No",
-                                payload: "CancelTour"
+                                text:"Would you like to take the tour again?",
+                                role: "bot",
+                                delay: incrementor.increment(4),
+                                actions: [
+                                    {
+                                        type: "reply",
+                                        text: "Yes",
+                                        payload: "StartTour"
+                                    },
+                                    {
+                                        type: "reply",
+                                        text: "No",
+                                        payload: "CancelTour"
+                                    }
+                                ]
                             }
-                        ]
-                    }
-                ]);
-            } else if (userProgress === 'false') {
-                console.log("Person hasn't toured")
-                conversation.say([
-                    {
-                        text: `Hello ${userName}! I am Chip, your guide to Chatshipper. Pleased to meet you!`,
-                        role: 'bot',
-                        delay: incrementor.set(3)
-                    },
-                    {
-                        text:"Would you like to take the tour now?",
-                        role: "bot",
-                        delay: incrementor.increment(4),
-                        actions: [
+                        ]);
+                    } else if (userProgress === 'false') {
+                        console.log("Person hasn't toured")
+                        conversation.say([
                             {
-                                type: "reply",
-                                text: "Yes",
-                                payload: "StartTour"
+                                text: `Hello ${userName}! I am Chip, your guide to Chatshipper. Pleased to meet you!`,
+                                role: 'bot',
+                                delay: incrementor.set(3)
                             },
                             {
-                                type: "reply",
-                                text: "No",
-                                payload: "CancelTour"
+                                text:"Would you like to take the tour now?",
+                                role: "bot",
+                                delay: incrementor.increment(4),
+                                actions: [
+                                    {
+                                        type: "reply",
+                                        text: "Yes",
+                                        payload: "StartTour"
+                                    },
+                                    {
+                                        type: "reply",
+                                        text: "No",
+                                        payload: "CancelTour"
+                                    }
+                                ]
                             }
-                        ]
-                    }
-                ]);
-            } else if (userProgress.includes("video") == true) {
-                let progressNumber = parseInt(userProgress)
-                console.log(`User has started but not finished a tour. Their position was ${progressNumber}`)
-                conversation.say([
-                    {
-                        text: `Hello ${userName}! It seems you stopped the tour at video ${progressNumber + 1}.`,
-                        role: 'bot',
-                        delay: incrementor.set(3)
-                    },
-                    {
-                        text:"Would you like to start where you left off or do you want to restart the tour?",
-                        role: "bot",
-                        delay: incrementor.increment(4),
-                        actions: [
+                        ]);
+                    } else if (userProgress.includes("video") == true) {
+                        let progressNumber = parseInt(userProgress)
+                        console.log(`User has started but not finished a tour. Their position was ${progressNumber}`)
+                        conversation.say([
                             {
-                                type: "reply",
-                                text: `Skip to ${progressNumber + 1}`,
-                                payload: `${progressNumber - 1} complete`
+                                text: `Hello ${userName}! It seems you stopped the tour at video ${progressNumber + 1}.`,
+                                role: 'bot',
+                                delay: incrementor.set(3)
                             },
                             {
-                                type: "reply",
-                                text: "Restart the tour",
-                                payload: "StartTour"
+                                text:"Would you like to start where you left off or do you want to restart the tour?",
+                                role: "bot",
+                                delay: incrementor.increment(4),
+                                actions: [
+                                    {
+                                        type: "reply",
+                                        text: `Skip to ${progressNumber + 1}`,
+                                        payload: `${progressNumber - 1} complete`
+                                    },
+                                    {
+                                        type: "reply",
+                                        text: "Restart the tour",
+                                        payload: "StartTour"
+                                    }
+                                ]
                             }
-                        ]
+                        ]);
+                    } else {
+                        console.log("Can't find status")
                     }
-                ]);
-            } else {
-                console.log("Can't find status")
-            }
+                } else {
+                    conversation.say([
+                        {
+                            text: `Hello ${userName}! It seems that you are not the only one in this conversation. I'll be happy to give you a tour in a private conversation!`,
+                            role: 'bot',
+                            delay: incrementor.set(3)
+                        }
+                    ]);
+
+                }
+            });
         });
-    });
+    }
 });
 
 
@@ -225,38 +248,44 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
                 }
             ]);
         })
+    } else if (message.text === "ResetProgress") {
+        bot.users.get(userId).then((user) => {
+            const userId = message.user
+            const userProgress = get(user, 'meta.hasToured', 'false')
+            let progressNumber = parseInt(userProgress)
+            if (userProgress === false) {
+                conversation.say([
+                    {
+                        text: "You don't have any progress in the tour.",
+                        role: 'bot',
+                        delay: incrementor.set(3)
+                    }
+                ]);
+            } else if (message.text === "true") {
+                bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
+                    conversation.say([
+                        {
+                            text: "You have finished the tour, your progress has been reset!",
+                            role: 'bot',
+                            delay: incrementor.set(3)
+                        }
+                    ]);
+                })
+            } else if (userProgress.includes("video") == true) {
+                bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
+                    conversation.say([
+                        {
+                            text: `You started but haven't finished the tour. you reached video ${(progressNumber + 1)}. Your progress has been reset!`,
+                            role: 'bot',
+                            delay: incrementor.set(3)
+                        }
+                    ]);
+                })
+            }
+        })
     } else if (message.text === "0complete") {
         const userId = message.user
-        bot.users.update(userId, { meta: { hasToured: '1video' }})
-        conversation.say([
-            {
-                text: "Alright, you should know how to accept a conversation now!",
-                role: 'bot',
-                delay: incrementor.set(3)
-            },
-            {
-                text: "The next video will show the different statusses of a conversation.",
-                role: 'bot',
-                delay: incrementor.increment(4)
-            },
-            {
-                text: "Please click the button when you are done watching the video.",
-                role: 'bot',
-                delay: incrementor.increment(3)
-            },
-            {
-                text: "https://www.youtube.com/embed/846DWH8soIw",
-                contentType: "text/url",
-                delay: incrementor.increment(7),
-                actions: [
-                    {
-                        type: "reply",
-                        text: "Done",
-                        payload: "1complete"
-                    }
-                ]
-            }
-        ]);
+        nextVideoinPath(conversation, 1, "the different statusses of conversations.", userId)
     } else if (message.text === "1complete") {
         const userId = message.user
         nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", userId, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
@@ -295,28 +324,71 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
         nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", userId, "This is the last video, we're almost here!")
     }  else if (message.text === "13complete") {
         const userId = message.user
-            bot.users.update(userId, { meta: { hasToured: 'true' }})
-            conversation.say([
-                {
-                    text: "Alright, that was the tour! If you ever want to retake the tour, come back and i'll restart the tour for you!",
-                    role: 'bot',
-                    delay: incrementor.set(3)
-                },
-            ]);
-        };
+        bot.users.update(userId, { meta: { hasToured: 'true' }})
+        conversation.say([
+            {
+                text: "Alright, that was the tour! If you ever want to retake the tour, come back and i'll restart the tour for you!",
+                role: 'bot',
+                delay: incrementor.set(3)
+            },
+        ]);
+    };
 });
 
+bot.on('message.create.agent.chat', (message, conversation) => {
+    const userId = message.user
+    bot.users.get(userId).then((user) => {
+        if (message.text === 'mention') {
+            const userProgress = get(user, 'meta.hasToured', 'false')
+            let progressNumber = parseInt(userProgress)
+            conversation.say([
+                {
+                    text: "Hey there! I'm Chip the tour guide! pleased to meet you!",
+                    role: 'bot',
+                    delay: incrementor.set(2)
+                },
+                {
+                    text: "What can i do for you?",
+                    role: 'bot',
+                    delay: incrementor.increment(3),
+                    actions: [
+                        {
+                            type: "reply",
+                            text: `Start a tour`,
+                            payload: `StartTour`
+                        },
+                        {
+                            type: "reply",
+                            text: "Continue my tour",
+                            payload: `${(progressNumber - 1)}complete`
+                        },
+                        {
+                            type: "reply",
+                            text: `Reset my progress`,
+                            payload: `ResetProgress`
+                        }
+                    ]
+                }
+            ]);
+        }
+    })
+});
+
+// bot.on('**.command', { text: ">TourGuide" }, callback)
+
+/*
 bot.on('notify', (message, conversation) => {
-  if (message.type === 'mention') {
-    conversation.say('Wazzup?');
-  } else if (message.type === 'command' && message.text === '/assign') {
-    // assume responsibility of the conversation
+    console.log("Notify detected! <-------------------------------------->", message)
+    if (message.type === 'command' && message.text === ">TourGuide") {
+        conversation.say('Wazzup?');
+    } else if (message.type === 'command' && message.text === '/assign') {
+        // assume responsibility of the conversation
     conversation.accept();
   } else if (message.type === 'command' && message.text.startsWith('>')) {
     conversation.say('Wazzup?', { isBackchannel: true });
   }
 });
-
+*/
 
 // Start Express.js webhook server to start listening
 bot.start();
