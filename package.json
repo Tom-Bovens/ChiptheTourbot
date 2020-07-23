@@ -5,6 +5,8 @@
   "main": "src/index.js",
   "dependencies": {
     "chipchat": "^0.1.8",
+    "debug": "^4.1.1",
+    "dotenv": "^8.2.0",
     "lodash": "^4.17.19"
   },
   "devDependencies": {
