@@ -115,7 +115,8 @@ bot.on('conversation.create', (message) => {
         const userPromise = bot.users.get(userId)
         Promise.all([conversationPromise, userPromise]).then(([conversation, user]) => {
             if (participantsCheck(conversation) <= 2) {
-                const userProgress = get(user, 'meta.hasToured', 'false').catch(errorCatch)
+                log('aaaaaaaaaaaaaaaaaaaa')
+                const userProgress = get(user, 'meta.hasToured', 'false')
                 if (userProgress === 'true') {
                     //  log("Person has toured before.")
                     conversation.say([
@@ -219,13 +220,13 @@ bot.on('conversation.create', (message) => {
 });
 
 
-bot.on('message.create.agent.postback.agent', (message, conversation) => {
-    log('Processing message ', message.text)
+bot.on('message.create.agent.postback', (message, conversation) => {
+    log('Processing message', message.text)
     const userId = message.user
     log(`UserId: ${userId}`)
     if (participantsCheck(conversation) <= 2) {
         if (message.text === "StartTour") {
-            bot.users.update(userId, { meta: { hasToured: '0video' }}).then((user) => {
+            bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
                 log("User meta hasToured = " + user.meta.hasToured)
                 conversation.say([
                     {
@@ -262,6 +263,47 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
                     }
                 ]).catch(errorCatch);
             }).catch(errorCatch)
+        } else if (message.text === "CancelTour") {
+                conversation.say([
+                    {
+                        text: "Alright then, you can take the tour at any time! Just come back and type >tour in the command menu if i don't respond.",
+                        role: 'bot',
+                        delay: incrementor.set(3)
+                    },
+                    {
+                        text: "Have a nice day!",
+                        role: 'bot',
+                        delay: incrementor.increment(2)
+                    }
+                ]).catch(errorCatch);
+        } else if (message.text === "0complete") {
+            nextVideoinPath(conversation, 1, "the different statusses of conversations.", userId, "By the way. You can open the tour menu by using the bot command >tour.")
+        } else if (message.text === "1complete") {
+            nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", userId, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
+        } else if (message.text === "2complete") {
+            nextVideoinPath(conversation, 3, "how to finish a conversation by making a form.", userId, "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
+        } else if (message.text === "3complete") {
+            nextVideoinPath(conversation, 4, "how to edit your preferences and personal details in Chatshipper.", userId, "Be sure to visit the preferences tab later to select the options that you like best!")
+        } else if (message.text === "4complete") {
+            nextVideoinPath(conversation, 5, "... Actually, it won't show anything. The video is still set to private.", userId)
+        } else if (message.text === "5complete") {
+            nextVideoinPath(conversation, 6, "how to send files, videos or photos via Chatshipper.", userId, "We're halfway! Keep going!")
+        } else if (message.text === "6complete") {
+            nextVideoinPath(conversation, 7, "how to find a contact or conversation with the search bar.", userId)
+        } else if (message.text === "7complete") {
+            nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.", userId)
+        } else if (message.text === "8complete") {
+            nextVideoinPath(conversation, 9, "how to start a chat with one or more colleagues.", userId, "We hit number 10, just 4 more to go!")
+        } else if (message.text === "9complete") {
+            nextVideoinPath(conversation, 10, "how to ask a colleague to join your current conversation with a consumer.", userId)
+        } else if (message.text === "10complete") {
+            nextVideoinPath(conversation, 11, "how to follow and unfollow conversations.", userId)
+        } else if (message.text === "11complete") {
+            nextVideoinPath(conversation, 12, "how to make and use pre-made (canned) responses in conversations.", userId)
+        } else if (message.text === "12complete") {
+            nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", userId, "This is the last video, we're almost here!")
+        }  else if (message.text === "13complete") {
+            bot.users.update(userId, { meta: { hasToured: 'true' }})
         } else if (message.text === "13complete") {
             bot.users.update(userId, { meta: { hasToured: 'true' }})
             conversation.say([
@@ -271,59 +313,6 @@ bot.on('message.create.agent.postback.agent', (message, conversation) => {
                     delay: incrementor.set(3)
                 },
             ]).catch(errorCatch);
-        } else if (message.text.match(/\d+complete/)) {} {
-            bot.users.get(userId).then((user) => {
-                const userProgress = get(user, 'meta.hasToured', 'false')
-                const iteration = parseInt(userProgress, 10) + 1
-                const messages = {
-                    0: {
-                        videoContents: "the different statusses of conversations."
-                    },
-                    1: {
-                        videoContents: "how to edit contact fields in conversations",
-                        specialMessage: "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes."
-                    },
-                    2: {
-                        videoContents: "how to finish a conversation by making a form.",
-                        specialMessage: "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later."
-                    },
-                    3: {
-                        videoContents: "how to edit your preferences and personal details in Chatshipper.",
-                        specialMessage: "Be sure to visit the preferences tab later to select the options that you like best!"
-                    },
-                    4: {
-                        videoContents: "... Actually, it won't show anything. The video is still set to private."
-                    },
-                    5: {
-                        videoContents: "how to send files, videos or photos via Chatshipper.",
-                        specialMessage: "We're halfway! Keep going!"
-                    },
-                    6: {
-                        videoContents: "how to find a contact or conversation with the search bar."
-                    },
-                    7: {
-                        videoContents: "how to forward your conversation with the search bar."
-                    },
-                    8: {
-                        videoContents: "how to start a chat with one or more colleagues.",
-                        specialMessage: "We hit number 10, just 4 more to go!"
-                    },
-                    9: {
-                        videoContents: "how to ask a colleague to join your conversation with a consumer."
-                    },
-                    10: {
-                        videoContents: "how to follow and unfollow conversations."
-                    },
-                    11: {
-                        videoContents: "how to make and use pre-made (canned) responses in conversations."
-                    },
-                    12: {
-                        videoContents: "how to give feedback on the forms that your colleague made.",
-                        specialMessage: "This is the last video, we're almost here!"
-                    }
-                }
-                nextVideoinPath(conversation, iteration, messages[iteration].videoContents, userId, messages[iteration].specialMessage)
-            }).catch(errorCatch)
         }
     };
 });
