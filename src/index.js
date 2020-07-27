@@ -80,11 +80,6 @@ const nextVideoinPath = (conversation, currentIteration = 0, videoContentDescrip
     conversation.say(messages).catch(errorCatch);
 }
 
-const participantsCheck = (conversation) => {
-    log(Object.keys(conversation.participants).length + " users in this conversation.")
-    return Object.keys(conversation.participants).length
-}
-
 // Create a new bot instance
 const bot = new ChipChat({
     host: process.env.HOST,
@@ -105,21 +100,32 @@ if (!process.env.TOKEN) {
 // Logs any error produced to the console
 bot.on('error', log);
 
-bot.on('conversation.create', (message) => {
-    //  log("Conversation created!", message);
-    const userId = get(message, 'data.user.id');
+bot.on('user.login', (user) => {
+    const userId = get(user, 'data.user.id');
     if (userId) {
-        const userName = get(message, 'data.user.givenName', 'agent');
-        const conversationId = get(message, 'data.conversation.id');
-        const conversationPromise = bot.conversation(conversationId)
+        const userName = get(user, 'data.user.givenName', 'agent');
+        const conversationId = get(user, 'data.conversation.id');
         const userPromise = bot.users.get(userId)
-        Promise.all([conversationPromise, userPromise]).then(([conversation, user]) => {
-            if (participantsCheck(conversation) <= 2) {
-                log('aaaaaaaaaaaaaaaaaaaa')
+        bot.conversations.create(
+            { name: 'Tour', messages: [{ text: "Hey there! I'm Chip, your guide to Chatshipper!" }] }
+        ).then(
+            (conversation) => {
+                log(user.data.user.id)
+                // Contextualize the conversation, send a message using say()
+                bot.conversation(conversation)
+                bot.send(conversation.id, {
+                    type: 'command',
+                    text: '/assign',
+                    meta: {
+                        "users": [
+                            user.data.user.id
+                        ]
+                    }
+                })
                 const userProgress = get(user, 'meta.hasToured', 'false')
                 if (userProgress === 'true') {
                     //  log("Person has toured before.")
-                    conversation.say([
+                    bot.send(conversation.id, [
                         {
                             text: `Hello ${userName}! It seems that you've already taken this tour.`,
                             role: 'bot',
@@ -145,9 +151,9 @@ bot.on('conversation.create', (message) => {
                     ]).catch(errorCatch);
                 } else if (userProgress === 'false') {
                     log("Person hasn't toured")
-                    conversation.say([
+                    bot.send(conversation.id, [
                         {
-                            text: `Hello ${userName}! I am Chip, your guide to Chatshipper. Pleased to meet you!`,
+                            text: `Hello ${userName}! Pleased to meet you!`,
                             role: 'bot',
                             delay: incrementor.set(3)
                         },
@@ -172,7 +178,7 @@ bot.on('conversation.create', (message) => {
                 } else if (userProgress.includes("video") == true) {
                     let progressNumber = parseInt(userProgress, 10)
                     log(`User has started but not finished a tour. Their position was ${progressNumber}`)
-                    conversation.say([
+                    bot.send(conversation.id, [
                         {
                             text: `Hello ${userName}! It seems you stopped the tour at video ${progressNumber + 1}.`,
                             role: 'bot',
@@ -199,23 +205,8 @@ bot.on('conversation.create', (message) => {
                 } else {
                     log("Can't find status")
                 }
-            } else {
-                conversation.say([
-                    {
-                        text: `Hello ${userName}! It seems that you are not the only one in this conversation. Do you want to continue with the tour?`,
-                        role: 'bot',
-                        delay: incrementor.set(3),
-                        actions: [
-                            {
-                                type: "reply",
-                                text: `Yes`,
-                                payload: `StartTour`
-                            }
-                        ]
-                    }
-                ]).catch(errorCatch);
             }
-        }).catch(errorCatch);
+        )
     }
 });
 
@@ -225,45 +216,47 @@ bot.on('message.create.agent.postback', (message, conversation) => {
     const userId = message.user
     log(`UserId: ${userId}`)
     if (participantsCheck(conversation) <= 2) {
-        if (message.text === "StartTour") {
-            bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
-                log("User meta hasToured = " + user.meta.hasToured)
-                conversation.say([
-                    {
-                        text: "Great! Then let's get started!",
-                        role: 'bot',
-                        delay: incrementor.set(3)
-                    },
-                    {
-                        text: "This tour will be done with Youtube videos, which i will send to you one by one.",
-                        role: 'bot',
-                        delay: incrementor.increment(5)
-                    },
-                    {
-                        text: "Please click the button when you are done watching the video.",
-                        role: 'bot',
-                        delay: incrementor.increment(4)
-                    },
-                    {
-                        text: "The first video will show you how to accept an incoming chat.",
-                        role: 'bot',
-                        delay: incrementor.increment(4)
-                    },
-                    {
-                        text: "https://www.youtube.com/embed/px-KEHbUrVo",
-                        contentType: "text/url",
-                        delay: incrementor.increment(7),
-                        actions: [
-                            {
-                                type: "reply",
-                                text: "Done",
-                                payload: "0complete"
-                            }
-                        ]
-                    }
-                ]).catch(errorCatch);
-            }).catch(errorCatch)
-        } else if (message.text === "CancelTour") {
+        switch (message.text) {
+            case "StartTour":
+                bot.users.update(userId, { meta: { hasToured: 'false' }}).then((user) => {
+                    log("User meta hasToured = " + user.meta.hasToured)
+                    conversation.say([
+                        {
+                            text: "Great! Then let's get started!",
+                            role: 'bot',
+                            delay: incrementor.set(3)
+                        },
+                        {
+                            text: "This tour will be done with Youtube videos, which i will send to you one by one.",
+                            role: 'bot',
+                            delay: incrementor.increment(5)
+                        },
+                        {
+                            text: "Please click the button when you are done watching the video.",
+                            role: 'bot',
+                            delay: incrementor.increment(4)
+                        },
+                        {
+                            text: "The first video will show you how to accept an incoming chat.",
+                            role: 'bot',
+                            delay: incrementor.increment(4)
+                        },
+                        {
+                            text: "https://www.youtube.com/embed/px-KEHbUrVo",
+                            contentType: "text/url",
+                            delay: incrementor.increment(7),
+                            actions: [
+                                {
+                                    type: "reply",
+                                    text: "Done",
+                                    payload: "0complete"
+                                }
+                            ]
+                        }
+                    ]).catch(errorCatch);
+                }).catch(errorCatch)
+                break
+            case "CancelTour":
                 conversation.say([
                     {
                         text: "Alright then, you can take the tour at any time! Just come back and type >tour in the command menu if i don't respond.",
@@ -274,45 +267,73 @@ bot.on('message.create.agent.postback', (message, conversation) => {
                         text: "Have a nice day!",
                         role: 'bot',
                         delay: incrementor.increment(2)
+                    },
+                    {
+                        text: "/leave",
+                        type: "command",
+                        role: 'bot',
+                        delay: incrementor.increment(1)
                     }
                 ]).catch(errorCatch);
-        } else if (message.text === "0complete") {
-            nextVideoinPath(conversation, 1, "the different statusses of conversations.", userId, "By the way. You can open the tour menu by using the bot command >tour.")
-        } else if (message.text === "1complete") {
-            nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", userId, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
-        } else if (message.text === "2complete") {
-            nextVideoinPath(conversation, 3, "how to finish a conversation by making a form.", userId, "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
-        } else if (message.text === "3complete") {
-            nextVideoinPath(conversation, 4, "how to edit your preferences and personal details in Chatshipper.", userId, "Be sure to visit the preferences tab later to select the options that you like best!")
-        } else if (message.text === "4complete") {
-            nextVideoinPath(conversation, 5, "... Actually, it won't show anything. The video is still set to private.", userId)
-        } else if (message.text === "5complete") {
-            nextVideoinPath(conversation, 6, "how to send files, videos or photos via Chatshipper.", userId, "We're halfway! Keep going!")
-        } else if (message.text === "6complete") {
-            nextVideoinPath(conversation, 7, "how to find a contact or conversation with the search bar.", userId)
-        } else if (message.text === "7complete") {
-            nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.", userId)
-        } else if (message.text === "8complete") {
-            nextVideoinPath(conversation, 9, "how to start a chat with one or more colleagues.", userId, "We hit number 10, just 4 more to go!")
-        } else if (message.text === "9complete") {
-            nextVideoinPath(conversation, 10, "how to ask a colleague to join your current conversation with a consumer.", userId)
-        } else if (message.text === "10complete") {
-            nextVideoinPath(conversation, 11, "how to follow and unfollow conversations.", userId)
-        } else if (message.text === "11complete") {
-            nextVideoinPath(conversation, 12, "how to make and use pre-made (canned) responses in conversations.", userId)
-        } else if (message.text === "12complete") {
-            nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", userId, "This is the last video, we're almost here!")
-        }  else if (message.text === "13complete") {
-            bot.users.update(userId, { meta: { hasToured: 'true' }})
-        } else if (message.text === "13complete") {
-            bot.users.update(userId, { meta: { hasToured: 'true' }})
-            conversation.say([
-                {
-                    text: "Alright, that was the tour! If you ever want to retake the tour, come back and i'll restart the tour for you!",
-                    role: 'bot',
-                    delay: incrementor.set(3)
-                },
-            ]).catch(errorCatch);
+                break
+            case "0complete":
+                nextVideoinPath(conversation, 1, "the different statusses of conversations.", userId, "By the way. You can open the tour menu by using the bot command >tour.")
+                break
+            case "1complete":
+                nextVideoinPath(conversation, 2, "how to edit contact fields in conversations.", userId, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
+                break
+            case "2complete":
+                nextVideoinPath(conversation, 3, "how to finish a conversation by making a form.", userId, "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
+                break
+            case "3complete":
+                nextVideoinPath(conversation, 4, "how to edit your preferences and personal details in Chatshipper.", userId, "Be sure to visit the preferences tab later to select the options that you like best!")
+                break
+            case "4complete":
+                nextVideoinPath(conversation, 5, "... Actually, it won't show anything. The video is still set to private.", userId)
+                break
+            case "5complete":
+                nextVideoinPath(conversation, 6, "how to send files, videos or photos via Chatshipper.", userId, "We're halfway! Keep going!")
+                break
+            case "6complete":
+                nextVideoinPath(conversation, 7, "how to find a contact or conversation with the search bar.", userId)
+                break
+            case "7complete":
+                nextVideoinPath(conversation, 8, "how to forward your conversation to another agent or department.", userId)
+                break
+            case "8complete":
+                nextVideoinPath(conversation, 9, "how to start a chat with one or more colleagues.", userId, "We hit number 10, just 4 more to go!")
+                break
+            case "9complete":
+                nextVideoinPath(conversation, 10, "how to ask a colleague to join your current conversation with a consumer.", userId)
+                break
+            case "10complete":
+                nextVideoinPath(conversation, 11, "how to follow and unfollow conversations.", userId)
+                break
+            case "11complete":
+                nextVideoinPath(conversation, 12, "how to make and use pre-made (canned) responses in conversations.", userId)
+                break
+            case "12complete":
+                nextVideoinPath(conversation, 13, "how to give feedback on the forms that your colleagues made.", userId, "This is the last video, we're almost here!")
+                break
+            case "13complete":
+                bot.users.update(userId, { meta: { hasToured: 'true' }})
+                conversation.say([
+                    {
+                        text: "Alright, that was the tour! If you ever want to retake the tour, come back and i'll restart the tour for you!",
+                        role: 'bot',
+                        delay: incrementor.set(3)
+                    },
+                    {
+                        text: "/leave",
+                        type: "command",
+                        role: 'bot',
+                        delay: incrementor.increment(1)
+                    }
+                ]).catch(errorCatch);
+                break
+            default:
+                log("No recognized message in postback.")
+                break
         }
     };
 });
