@@ -317,7 +317,35 @@ bot.on('message.create.*.postback.agent', (message, conversation) => {
                 bot.users.update(userId, { meta: { hasToured: 'true' }})
                 conversation.say([
                     {
-                        text: "Good job, you finished the tour!",
+                        text: "Good job, we've finished the Tour! I just have one more thing to show you.",
+                        role: 'bot',
+                        delay: incrementor.set(2)
+                    },
+                    {
+                        text: "Chatshipper has a nice feature called result commenting, which can be used to leave feedback on forms your colleagues made! Let me give you an example...",
+                        role: 'bot',
+                        delay: incrementor.increment(4)
+                    },
+                    {
+                        contentType: 'image/png',
+                        text: 'https://cht.onl/a/x7zEKfz3X/commentonform.gif',
+                        role: 'bot',
+                        delay: incrementor.increment(3),
+                        actions: [
+                            {
+                                type: 'reply',
+                                text: 'Ok!',
+                                payload: "14complete"
+                            }
+                        ]
+                    }
+                ])
+                break
+            case "14complete":
+                bot.users.update(userId, { meta: { hasToured: 'true' }})
+                conversation.say([
+                    {
+                        text: "Nice, you finished the tour!",
                         role: 'bot',
                         delay: incrementor.set(2)
                     },
