@@ -84,7 +84,7 @@ const nextVideoinPath = (conversation, currentIteration = 0, videoContentDescrip
             ]
         }
     )
-    bot.send(conversation.id, messages).catch(err => { errorCatch(err, console.trace()) })
+    bot.send(conversation, messages).catch(err => { errorCatch(err, console.trace()) })
 }
 
 // Crashes the code if no token is found
@@ -211,12 +211,11 @@ bot.on('user.login', async (user) => {
 });
 
 
-bot.on('message.create.*.postback.agent', (message, conversation) => {
-    const userId = message.id
+bot.on('message.create.*.postback.agent', async (message, conversation) => {
     switch (message.text) {
         case "StartTour":
-            bot.users.update(userId, { meta: { hasToured: 'SkippedTour' }}).catch(err => { errorCatch(err, console.trace()) })
-            bot.send(id, [
+            bot.users.update(message.user, { meta: { hasToured: 'SkippedTour' }}).catch(err => { errorCatch(err, console.trace()) })
+            bot.send(conversation.id, [
                 {
                     text: "Great! Then let's get started!",
                     role: 'bot',
@@ -252,8 +251,8 @@ bot.on('message.create.*.postback.agent', (message, conversation) => {
             ]).catch(err => { errorCatch(err, console.trace()) })
             break
         case "CancelTour":
-            bot.users.update(userId, { meta: { hasToured: 'false' }}).catch(err => { errorCatch(e, console.trace()) })
-                bot.send(id, [
+            bot.users.update(message.user, { meta: { hasToured: 'false' }}).catch(err => { errorCatch(e, console.trace()) })
+                bot.send(conversation.id, [
                     {
                         text: "Alright then, you can take the tour at any time! Just come back and type >tour in the command menu if i don't respond.",
                         role: 'bot',
@@ -273,47 +272,47 @@ bot.on('message.create.*.postback.agent', (message, conversation) => {
                 ]).catch(err => { errorCatch(e, console.trace()) })
             break
         case "0complete":
-            nextVideoinPath(id, 1, "the different statusses of conversations.", userId, "By the way. You can open the tour menu by starting a new conversation with me via the dashboard..")
+            nextVideoinPath(conversation.id, 1, "the different statusses of conversations.", message.user, "By the way. You can open the tour menu by starting a new conversation with me via the dashboard..")
             break
         case "1complete":
-            nextVideoinPath(id, 2, "how to edit contact fields in conversations.", userId, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
+            nextVideoinPath(conversation.id, 2, "how to edit contact fields in conversations.", message.user, "This tour has 14 videos by the way, but it shouldn't take up more than 15 minutes.")
             break
         case "2complete":
-            nextVideoinPath(id, 3, "how to finish a conversation by making a form.", userId, "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
+            nextVideoinPath(conversation.id, 3, "how to finish a conversation by making a form.", message.user, "Also, if you don't have the time to take this tour now, you can always close this conversation and re-do the tour later.")
             break
         case "3complete":
-            nextVideoinPath(id, 4, "how to edit your preferences and personal details in Chatshipper.", userId, "Be sure to visit the preferences tab later to select the options that you like best!")
+            nextVideoinPath(conversation.id, 4, "how to edit your preferences and personal details in Chatshipper.", message.user, "Be sure to visit the preferences tab later to select the options that you like best!")
             break
         case "4complete":
-            nextVideoinPath(id, 5, "... Actually, it won't show anything. The video is still set to private.", userId)
+            nextVideoinPath(conversation.id, 5, "... Actually, it won't show anything. The video is still set to private.", message.user)
             break
         case "5complete":
-            nextVideoinPath(id, 6, "how to send files, videos or photos via Chatshipper.", userId, "We're halfway! Keep going!")
+            nextVideoinPath(conversation.id, 6, "how to send files, videos or photos via Chatshipper.", message.user, "We're halfway! Keep going!")
             break
         case "6complete":
-            nextVideoinPath(id, 7, "how to find a contact or conversation with the search bar.", userId)
+            nextVideoinPath(conversation.id, 7, "how to find a contact or conversation with the search bar.", message.user)
             break
         case "7complete":
-            nextVideoinPath(id, 8, "how to forward your conversation to another agent or department.", userId)
+            nextVideoinPath(conversation.id, 8, "how to forward your conversation to another agent or department.", message.user)
             break
         case "8complete":
-            nextVideoinPath(id, 9, "how to start a chat with one or more colleagues.", userId, "We hit number 10, just 4 more to go!")
+            nextVideoinPath(conversation.id, 9, "how to start a chat with one or more colleagues.", message.user, "We hit number 10, just 4 more to go!")
             break
         case "9complete":
-            nextVideoinPath(id, 10, "how to ask a colleague to join your current conversation with a consumer.", userId)
+            nextVideoinPath(conversation.id, 10, "how to ask a colleague to join your current conversation with a consumer.", message.user)
             break
         case "10complete":
-            nextVideoinPath(id, 11, "how to follow and unfollow conversations.", userId)
+            nextVideoinPath(conversation.id, 11, "how to follow and unfollow conversations.", message.user)
             break
         case "11complete":
-            nextVideoinPath(id, 12, "how to make and use pre-made (canned) responses in conversations.", userId)
+            nextVideoinPath(conversation.id, 12, "how to make and use pre-made (canned) responses in conversations.", message.user)
             break
         case "12complete":
-            nextVideoinPath(id, 13, "how to give feedback on the forms that your colleagues made.", userId, "This is the last video, we're almost here!")
+            nextVideoinPath(conversation.id, 13, "how to give feedback on the forms that your colleagues made.", message.user, "This is the last video, we're almost here!")
             break
         case "13complete":
-            bot.users.update(userId, { meta: { hasToured: 'true' }}).catch(err => { errorCatch(err, console.trace()) })
-            bot.send(id, [
+            bot.users.update(message.user, { meta: { hasToured: 'true' }}).catch(err => { errorCatch(err, console.trace()) })
+            bot.send(conversation.id, [
                 {
                     text: "Good job, we've finished the Tour! I just have one more thing to show you.",
                     role: 'bot',
@@ -340,8 +339,8 @@ bot.on('message.create.*.postback.agent', (message, conversation) => {
             ]).catch(err => { errorCatch(err, console.trace()) })
             break
         case "14complete":
-            bot.users.update(userId, { meta: { hasToured: 'true' }}).catch(err => { errorCatch(err, console.trace()) })
-            bot.send(id, [
+            bot.users.update(message.user, { meta: { hasToured: 'true' }}).catch(err => { errorCatch(err, console.trace()) })
+            bot.send(conversation.id, [
                 {
                     text: "Nice, you finished the tour!",
                     role: 'bot',
